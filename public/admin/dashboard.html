@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Admin Dashboard - hotel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/admin/admin.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="light-mode">
+    <!-- Live Notification Sound -->
+    <!-- Using a basic bloop sound embedded directly to ensure it works without external assets -->
+    <audio id="notificationSound"
+        src="data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq"
+        preload="auto"></audio>
+
+    <!-- Top Navigation -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="logo"><i class="fas fa-utensils"></i> hotel Admin</h1>
+            </div>
+            <div class="header-right">
+                <button id="themeToggle" class="theme-toggle-btn" title="Toggle Dark/Light Mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <div class="admin-info">
+                    <span id="adminUsername">Admin</span>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+        <nav class="nav-menu">
+            <a href="#dashboard" class="nav-link active" data-section="dashboard">
+                <i class="fas fa-chart-pie"></i> <span class="nav-text">Dashboard</span>
+            </a>
+            <a href="#orders" class="nav-link" data-section="orders">
+                <i class="fas fa-columns"></i> <span class="nav-text">Kanban Orders</span>
+                <span class="badge" id="ordersBadge">0</span>
+            </a>
+            <a href="#inventory" class="nav-link" data-section="inventory">
+                <i class="fas fa-boxes"></i> <span class="nav-text">Inventory</span>
+            </a>
+            <a href="#finance" class="nav-link" data-section="finance">
+                <i class="fas fa-wallet"></i> <span class="nav-text">Finance</span>
+            </a>
+            <a href="#contacts" class="nav-link" data-section="contacts">
+                <i class="fas fa-envelope"></i> <span class="nav-text">Contacts</span>
+                <span class="badge" id="contactsBadge">0</span>
+            </a>
+            <a href="#menu" class="nav-link" data-section="menu">
+                <i class="fas fa-utensils"></i> <span class="nav-text">Menu Setup</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active">
+            <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>Smart Dashboard</h2>
+                <div class="date-filter">
+                    <select id="dashboardDateFilter" class="filter-select" onchange="loadOrdersandStats()">
+                        <option value="today">Today</option>
+                        <option value="weekly">This Week</option>
+                        <option value="monthly">This Month</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalOrders" class="counter">0</h3>
+                        <p>Total Orders</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #047857);">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalRevenue" class="counter">₹0</h3>
+                        <p>Total Revenue</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="pendingOrders" class="counter">0</h3>
+                        <p>Pending Orders</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444, #b91c1c);">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="cancelledOrders" class="counter">0</h3>
+                        <p>Cancelled</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Dashboard Layout -->
+            <div class="dashboard-widgets">
+                <!-- Main Charts -->
+                <div class="charts-col">
+                    <div class="chart-card">
+                        <h3>Revenue & Orders Trend</h3>
+                        <div style="height: 300px; position:relative;">
+                            <canvas id="revenueTrendChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Order Status Distribution</h3>
+                        <div style="height: 250px; display:flex; justify-content:center; align-items:center;">
+                            <canvas id="orderStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Insights -->
+                <div class="ai-col">
+                    <div class="ai-insights-card">
+                        <div class="card-header ai-header">
+                            <h3><i class="fas fa-robot glowing-icon"></i> AI Suggestions</h3>
+                        </div>
+                        <div class="insights-content">
+                            <div class="insight-item">
+                                <div class="insight-icon bg-primary-light">
+                                    <i class="fas fa-clock text-primary"></i>
+                                </div>
+                                <div class="insight-text">
+                                    <h4>Peak Order Time</h4>
+                                    <p id="aiPeakTime">Analyzing...</p>
+                                </div>
+                            </div>
+                            <div class="insight-item">
+                                <div class="insight-icon bg-warning-light">
+                                    <i class="fas fa-star text-warning"></i>
+                                </div>
+                                <div class="insight-text">
+                                    <h4>Best Selling Item</h4>
+                                    <p id="aiBestItem">Analyzing...</p>
+                                </div>
+                            </div>
+                            <div class="insight-item">
+                                <div class="insight-icon bg-danger-light">
+                                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                                </div>
+                                <div class="insight-text">
+                                    <h4>Low Stock Alerts</h4>
+                                    <p id="aiLowStock">Evaluating ingredients...</p>
+                                </div>
+                            </div>
+                            <div class="insight-item">
+                                <div class="insight-icon bg-success-light">
+                                    <i class="fas fa-bolt text-success"></i>
+                                </div>
+                                <div class="insight-text">
+                                    <h4>Avg Completion Time</h4>
+                                    <p id="aiAvgTime">Analyzing...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Orders Kanban Section -->
+        <section id="orders" class="section">
+            <div class="section-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>Order Management</h2>
+                <input type="text" id="customerSearch" onkeyup="filterOrders()" placeholder="Search orders..."
+                    class="search-input">
+            </div>
+
+            <div class="kanban-board" style="grid-template-columns: repeat(5, 1fr);">
+                <!-- Pending -->
+                <div class="kanban-column" id="col-pending" ondrop="drop(event, 'pending')"
+                    ondragover="allowDrop(event)">
+                    <div class="kanban-header">
+                        <h3><i class="fas fa-inbox"></i> New <span class="badge badge-light" id="count-pending">0</span>
+                        </h3>
+                    </div>
+                    <div class="kanban-cards" id="cards-pending"></div>
+                </div>
+
+                <!-- Preparing -->
+                <div class="kanban-column" id="col-preparing" ondrop="drop(event, 'preparing')"
+                    ondragover="allowDrop(event)">
+                    <div class="kanban-header kanban-preparing">
+                        <h3><i class="fas fa-fire"></i> Preparing <span class="badge badge-light"
+                                id="count-preparing">0</span></h3>
+                    </div>
+                    <div class="kanban-cards" id="cards-preparing"></div>
+                </div>
+
+                <!-- Ready -->
+                <div class="kanban-column" id="col-ready" ondrop="drop(event, 'ready')" ondragover="allowDrop(event)">
+                    <div class="kanban-header kanban-ready">
+                        <h3><i class="fas fa-check-double"></i> Ready <span class="badge badge-light"
+                                id="count-ready">0</span></h3>
+                    </div>
+                    <div class="kanban-cards" id="cards-ready"></div>
+                </div>
+
+                <!-- Completed -->
+                <div class="kanban-column kanban-completed-col" id="col-completed" ondrop="drop(event, 'completed')"
+                    ondragover="allowDrop(event)">
+                    <div class="kanban-header kanban-completed">
+                        <h3><i class="fas fa-flag-checkered"></i> Completed <span class="badge badge-light"
+                                id="count-completed">0</span></h3>
+                    </div>
+                    <div class="kanban-cards" id="cards-completed"></div>
+                </div>
+
+                <!-- Cancelled -->
+                <div class="kanban-column" id="col-cancelled" ondrop="drop(event, 'cancelled')"
+                    ondragover="allowDrop(event)">
+                    <div class="kanban-header" style="border-top: 4px solid var(--danger);">
+                        <h3><i class="fas fa-ban"></i> Cancelled <span class="badge badge-light"
+                                id="count-cancelled">0</span></h3>
+                    </div>
+                    <div class="kanban-cards" id="cards-cancelled"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Inventory List -->
+        <section id="inventory" class="section">
+            <div class="section-header" style="display:flex; justify-content:space-between;">
+                <h2>Inventory Monitor</h2>
+                <button class="btn btn-primary" onclick="openModal('inventoryModal')"><i class="fas fa-plus"></i> Add
+                    Item</button>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Item Name</th>
+                            <th>Stock Quantity</th>
+                            <th>Unit</th>
+                            <th>Status / Alert</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTable">
+                        <tr>
+                            <td colspan="5" class="no-data">Loading inventory...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Financial Overview -->
+        <section id="finance" class="section">
+            <div class="section-header" style="display:flex; justify-content:space-between;">
+                <h2>Financial Overview</h2>
+                <button class="btn btn-primary" onclick="openModal('expenseModal')"><i class="fas fa-plus"></i> Add
+                    Expense</button>
+            </div>
+
+            <div class="finance-widgets" style="display:flex; gap: 20px; margin-bottom: 25px;">
+                <!-- Financial chart -->
+                <div class="chart-card" style="flex: 2;">
+                    <h3>Revenue vs Expenses</h3>
+                    <div style="height: 250px;">
+                        <canvas id="financeChart"></canvas>
+                    </div>
+                </div>
+                <!-- Mini summary -->
+                <div class="finance-summary"
+                    style="flex: 1; background: var(--card-bg, #fff); border-radius:12px; padding:20px; box-shadow: var(--shadow);">
+                    <h3 style="margin-bottom:15px; border-bottom:1px solid var(--border); padding-bottom:10px;">Summary
+                    </h3>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span class="text-secondary">Gross Revenue:</span> <strong id="sumRevenue" class="text-success"
+                            style="font-size:1.1rem;">₹0</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span class="text-secondary">Tot. Expenses:</span> <strong id="sumExpenses" class="text-danger"
+                            style="font-size:1.1rem;">₹0</strong>
+                    </div>
+                    <div
+                        style="display:flex; justify-content:space-between; margin-top:20px; border-top:1px dashed var(--border); padding-top:15px; font-size:1.4rem;">
+                        <span>Net Profit:</span> <strong id="sumProfit" class="text-primary">₹0</strong>
+                    </div>
+                    <button class="btn btn-secondary" onclick="downloadFinancialPDF()"
+                        style="width:100%; margin-top:20px; display:flex; justify-content:center; gap:10px;">
+                        <i class="fas fa-file-pdf"></i> Download Report
+                    </button>
+                </div>
+            </div>
+
+            <div class="section-header">
+                <h3>Recent Expenses List</h3>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesTable">
+                        <tr>
+                            <td colspan="5" class="no-data">Loading expenses...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Contacts Section -->
+        <section id="contacts" class="section">
+            <div class="section-header">
+                <h2>Contact Messages</h2>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Subject</th>
+                            <th>Message</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contactsTable">
+                        <tr>
+                            <td colspan="7" class="no-data">No contacts yet</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Menu items Section -->
+        <section id="menu" class="section">
+            <div class="section-header" style="display:flex; justify-content:space-between;">
+                <h2>Menu Setup</h2>
+                <button class="btn btn-primary" id="addMenuBtn"><i class="fas fa-plus"></i> Add Item</button>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Image</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="menuTable">
+                        <tr>
+                            <td colspan="5" class="no-data">Loading menu items...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modals -->
+
+    <!-- Inventory Modal -->
+    <div class="modal" id="inventoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="invModalTitle">Add Inventory Item</h3>
+                <button class="close-btn" onclick="closeModal('inventoryModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Item Name</label>
+                    <input type="text" id="invName" class="form-control" placeholder="e.g. Coffee Beans">
+                </div>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label>Quantity</label>
+                        <input type="number" id="invQty" class="form-control" step="0.5">
+                    </div>
+                    <div style="flex:1;">
+                        <label>Unit (kg, pcs, L)</label>
+                        <input type="text" id="invUnit" class="form-control" placeholder="kg">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Low Stock Alert Threshold</label>
+                    <input type="number" id="invThreshold" class="form-control" step="0.5">
+                </div>
+                <div class="modal-footer">
+                    <button onclick="closeModal('inventoryModal')" class="btn btn-secondary">Cancel</button>
+                    <button onclick="saveInventory()" class="btn btn-primary">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Stock Modal -->
+    <div class="modal" id="editStockModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Update Stock</h3>
+                <button class="close-btn" onclick="closeModal('editStockModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>New Quantity</label>
+                    <input type="number" id="editInvQty" class="form-control" step="0.5">
+                </div>
+                <div class="modal-footer">
+                    <button onclick="closeModal('editStockModal')" class="btn btn-secondary">Cancel</button>
+                    <button onclick="saveEditStock()" class="btn btn-primary">Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expense Modal -->
+    <div class="modal" id="expenseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Expense</h3>
+                <button class="close-btn" onclick="closeModal('expenseModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="expDesc" class="form-control" placeholder="e.g. Electricity Bill">
+                </div>
+                <div class="form-group">
+                    <label>Amount (₹)</label>
+                    <input type="number" id="expAmount" class="form-control" step="1">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="expCategory" class="form-control">
+                        <option value="Utilities">Utilities</option>
+                        <option value="Ingredients">Ingredients</option>
+                        <option value="Rent">Rent</option>
+                        <option value="Salaries">Salaries</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="closeModal('expenseModal')" class="btn btn-secondary">Cancel</button>
+                    <button onclick="saveExpense()" class="btn btn-primary">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div class="modal" id="orderModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>Order Details</h3>
+                <button class="close-btn" onclick="closeModal('orderModal')">&times;</button>
+            </div>
+            <div class="modal-body" id="orderModalBody"></div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal" id="deleteModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirm Delete</h3>
+                <button class="close-btn" onclick="closeModal('deleteModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteMessage">Are you sure you want to delete this item?</p>
+                <div class="modal-footer">
+                    <button onclick="closeModal('deleteModal')" class="btn btn-secondary">Cancel</button>
+                    <button onclick="confirmDelete()" class="btn btn-danger">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Item Modal -->
+    <div class="modal" id="menuModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="menuModalTitle">Add Menu Item</h3>
+                <button class="close-btn" onclick="closeModal('menuModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="menuName" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Price</label>
+                    <input type="number" id="menuPrice" class="form-control" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="menuDescription" class="form-control" rows="2"
+                        placeholder="e.g. Delicious sweet..."></textarea>
+                </div>
+                <div class="form-group" style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label>Category</label>
+                        <select id="menuCategory" class="form-control">
+                            <option value="breakfast">Breakfast</option>
+                            <option value="lunch">Lunch</option>
+                            <option value="snacks">Snacks</option>
+                            <option value="drinks">Drinks</option>
+                            <option value="dessert">Dessert</option>
+                            <option value="all">All</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;">
+                        <label>Badge</label>
+                        <input type="text" id="menuBadge" class="form-control" placeholder="e.g. Best Seller">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Tags (comma separated)</label>
+                    <input type="text" id="menuTags" class="form-control" placeholder="e.g. Spicy, Vegan">
+                </div>
+                <div class="form-group">
+                    <label>Image</label>
+                    <input type="file" id="menuImage" accept="image/*" class="form-control">
+                    <img id="menuImagePreview" src=""
+                        style="max-width:100px;margin-top:10px;display:none; border-radius:8px;">
+                </div>
+                <div class="modal-footer">
+                    <button onclick="closeModal('menuModal')" class="btn btn-secondary">Cancel</button>
+                    <button id="menuSaveBtn" class="btn btn-primary">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Live Order Popup Notification Area -->
+    <div id="liveNotificationsContainer" class="live-notifications-container"></div>
+
+    <!-- Require jsPDF for download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <script src="/admin/admin.js"></script>
+</body>
+
+</html>

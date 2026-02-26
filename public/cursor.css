@@ -1,0 +1,35 @@
+/* Custom glowing cursor */
+
+/* hide default cursor for desktop */
+body {
+  cursor: none;
+}
+
+/* cursor element */
+#custom-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(1);
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  z-index: 9999;
+  mix-blend-mode: difference; /* subtle contrast */
+}
+
+/* enlarge/glow when hovering interactive elements */
+#custom-cursor.cursor-hover {
+  transform: translate(-50%, -50%) scale(2);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 1);
+}
+
+/* click effect */
+#custom-cursor.cursor-click {
+  transform: translate(-50%, -50%) scale(0.8);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+}
